@@ -1,0 +1,4 @@
+name = "ForceCubeAccess"
+uuid = "fb6dc702-b415-48c1-83c1-7db4ffe21525"
+authors = ["Max Freudenberg <max.freudenberg@protonmail.com>"]
+version = "0.1.0"
