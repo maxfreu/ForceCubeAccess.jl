@@ -2,3 +2,6 @@ name = "ForceCubeAccess"
 uuid = "fb6dc702-b415-48c1-83c1-7db4ffe21525"
 authors = ["Max Freudenberg <max.freudenberg@protonmail.com>"]
 version = "0.1.0"
+
+[deps]
+Rasters = "a3a2b9e3-a471-40c9-b274-f788e487c689"

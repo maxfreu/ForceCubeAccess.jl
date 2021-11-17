@@ -1,5 +1,5 @@
 module ForceCubeAccess
 
-greet() = print("Hello World!")
+using Rasters
 
 end # module
