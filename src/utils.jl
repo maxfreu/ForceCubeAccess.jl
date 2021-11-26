@@ -1,0 +1,1 @@
+fname_to_datetime(fname) = DateTime(fname[1:8], "yyyymmdd")
