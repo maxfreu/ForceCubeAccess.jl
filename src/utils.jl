@@ -53,6 +53,29 @@ function joindims(lower::T, upper::T)::T where T
     return rebuild(lower; val=newproj)
 end
 
+"""
+    joindims_bridge_gap(lower, upper)
+
+Collates two dimensions. The dimensions must have the same resolution, but they can be disjunct.
+"""
+function joindims_bridge_gap(lower::T, upper::T)::T where T
+    if length(lower) == 0
+        return upper
+    elseif length(upper) == 0
+        return lower
+    end
+    lproj = lower.val
+    uproj = upper.val
+    lres = step(lproj)
+    ures = step(uproj)
+    lres == ures || error("Dimensions must have the same resolution, but they have $lres and $ures.")
+    lrange = lproj.data
+    urange = uproj.data
+    newrange = LinRange(lrange.start, urange.stop, floor(Int, (urange.stop - lrange.start) / lres) + 1)
+    newproj = rebuild(lproj; data=newrange)
+    return rebuild(lower; val=newproj)
+end
+
 
 """
     uniquedims(dims::Vector{T}) where T
@@ -86,8 +109,8 @@ function extract_dims(tiles)
     yperm = sortperm([d.val.data.start for d in ydims])
     xdims = xdims[xperm]
     ydims = reverse(ydims[yperm])  # adjust for reversed y indices, this is brittle
-    xdims = foldl(joindims, xdims)
-    ydims = foldl(joindims, ydims)
+    xdims = joindims_bridge_gap(first(xdims), last(xdims))
+    ydims = joindims_bridge_gap(first(ydims), last(ydims))
     return xdims, ydims
 end
 
