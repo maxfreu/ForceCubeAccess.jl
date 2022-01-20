@@ -1,3 +1,13 @@
+struct NoData end
+
+Base.length(::NoData) = 0
+Base.getindex(::NoData, I...) = NoData()
+Base.iterate(::NoData, state...) = nothing
+Base.ismissing(::NoData) = true
+Base.isempty(::NoData) = true
+DimensionalData.rebuild(::NoData, ::Vararg) = NoData()
+Rasters.read(::NoData) = NoData()
+
 """
     fname_to_datetime(fname)
 

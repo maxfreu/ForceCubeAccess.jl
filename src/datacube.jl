@@ -1,13 +1,10 @@
-abstract type DataCube end
-
-struct ForceCube{T,D,Mi,X} <: DataCube
+struct ForceCube{T,D,R,Mi,X}
     tiles::T
     dims::D
+    refdims::R
     missingval::Mi
     xy::X
 end
-
-struct ForceCubeBroadcastStyle <: Base.Broadcast.BroadcastStyle end
 
 function ForceCube(rootfolder::String; type::String="BOA")
     println("Indexing data. This may take a while.")
@@ -22,29 +19,35 @@ function ForceCube(rootfolder::String; type::String="BOA")
     xs, ys = unique.((xs, ys))
     sort!.((xs, ys))
     
-    tiles = RasterSeries[]
-    
+    tiles = Matrix{Union{NoData, RasterSeries}}(undef, length(ys), length(xs))
+    fill!(tiles, NoData())
+    tiles_offset = OffsetArray(tiles, minimum(ys):maximum(ys), minimum(xs):maximum(xs))
+
     for folder in tile_folders
         files = readdir(GlobMatch("*$(type).tif"), joinpath(rootfolder, folder));
         times = fname_to_datetime.(basename.(files));
-        # x,y = folder_to_index(folder)
+        x,y = folder_to_index(folder)
         series = RasterSeries(files, Ti(times); duplicate_first=true, name=Symbol(folder))
-        # tiles_offset[x,y] = series
-        push!(tiles, series)
+        tiles_offset[y,x] = series
+        # push!(tiles, series)
     end
     
-    series = first(tiles)
+    idx = findfirst(!isempty, tiles_offset)
+    series = tiles_offset[idx]
 
-    xdims, ydims = extract_dims(tiles)
+    xdims, ydims = extract_dims(tiles_offset)
 
     dims = (xdims, ydims, Rasters.dims(series[1], Band))
     missingval = series[1].missingval
 
-    return ForceCube(tiles, dims, missingval, (xs, ys))
+    return ForceCube(tiles, dims, (), missingval, (xs, ys))
 end
 
 function Base.show(io::IO, mime::MIME"text/plain", fc::ForceCube)
-    counts = collect(length_skipmissing.(fc.tiles)')
+    tiles = parent(fc)
+    counts = length.(tiles)
+    total_count = sum(counts)
+    println(io)
     show(io, mime, fc.dims)
     println(io)
     println(io)
@@ -52,37 +55,46 @@ function Base.show(io::IO, mime::MIME"text/plain", fc::ForceCube)
     Base.print_matrix(io, counts)
     println(io)
     println(io)
-    print(io, "$(sum(counts)) images in total.")
+    print(io, "$(total_count) images in total.")
 end
 
 Base.parent(fc::ForceCube) = fc.tiles
 Base.size(fc::ForceCube) = size(parent(fc))
 Base.ndims(fc::ForceCube) = length(dims(fc))
-Base.iterate(fc::ForceCube) = iterate(parent(fc))
+Base.iterate(fc::ForceCube, state...) = iterate(parent(fc), state...)
+Base.eltype(fc::ForceCube) = eltype(parent(fc))
 
-# not type stable
 function mapseries(f, fc::ForceCube)
-    tiles = similar(parent(fc))
+    tiles = Matrix{eltype(fc)}(undef, size(fc)...)
+    fill!(tiles, NoData())
     for xy in eachindex(parent(fc))
         series = parent(fc)[xy]
-        tiles[xy] = f(series)
-    end
-    xdims, ydims = extract_dims(tiles)
-    firstseries = findfirst(!isempty, tiles)
-    if isnothing(firstseries)  # all series are empty
-        dims = (xdims, ydims, Band(Int[]))
-    else
-        sample_raster = tiles[firstseries][1] # first raster in first non-empty series
-        if ndims(sample_raster) == 3
-            dims = (xdims, ydims, Rasters.dims(sample_raster, Band))
+        if isa(series, NoData)
+            tiles[xy] = NoData()
+            continue
+        end
+        res = f(series)
+        if isempty(res) || (0 in size(first(res)))  # mind the comparison order
+            tiles[xy] = NoData()
         else
-            dims = (xdims, ydims)
+            tiles[xy] = res
         end
     end
-    return ForceCube(tiles, dims, fc.missingval, fc.xy)
+    if all(isa.(tiles, NoData))
+        return ForceCube(tiles, (), (), fc.missingval, fc.xy)
+    else
+        xdims, ydims = extract_dims(tiles)
+        sample_raster = first(filter(!isempty, tiles))[1]
+        if ndims(sample_raster) == 3
+            dims_ = (xdims, ydims, dims(sample_raster, Band))
+        else
+            dims_ = (xdims, ydims)
+        end
+        return ForceCube(tiles, dims_, sample_raster.refdims, fc.missingval, fc.xy)
+    end
 end
 
-Rasters.dims(dc::DataCube) = dc.dims
+Rasters.dims(fc::ForceCube) = fc.dims
 Rasters.crs(fc::ForceCube) = crs(first(first(parent(fc))))
 Rasters.mappedcrs(fc::ForceCube) = mappedcrs(first(first(parent(fc))))
 
@@ -95,3 +107,9 @@ function Rasters.setmappedcrs(fc::ForceCube, crs)
 end
 
 extract_nonmissing(fc::ForceCube) = mapseries(extract_nonmissing_rasters, fc)
+
+function get_data(fc::ForceCube)
+    tiles = parent(fc)
+    mask = .!isempty.(tiles)
+    return tiles[mask]
+end
