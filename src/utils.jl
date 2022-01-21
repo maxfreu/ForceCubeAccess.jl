@@ -128,3 +128,17 @@ Extracts all `Rasters` from a series that contain any data uneual
 to their missing value and returns them as a new `RasterSeries`.
 """
 extract_nonmissing_rasters(s::RasterSeries) = s[contains_data.(s)]
+
+"""
+    get_sensor(series, sensor="SEN2")
+
+This function takes a RasterSeries and returns a new RasterSeries comprising only Rasters with 'sensor' in their name.
+
+This function can be mapped over the force cube to extract data from a specific sensor, based on the file names.
+It checks whether or not the file name contains the string "sensor" and if yes, the file is included.
+"""
+function get_sensor(series, sensor="SEN2")
+    fnames = Rasters.filename.(series)
+    sensor_imgs = (n -> contains(n, sensor)).(fnames)
+    return series[sensor_imgs]
+end

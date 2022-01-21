@@ -6,7 +6,7 @@ struct ForceCube{T,D,R,Mi,X}
     xy::X
 end
 
-function ForceCube(rootfolder::String; type::String="BOA")
+function ForceCube(rootfolder::String; type::String="BOA", filename_contains="", duplicate_first=true)
     println("Indexing data. This may take a while.")
    
     folder_contents = readdir(rootfolder)
@@ -25,9 +25,12 @@ function ForceCube(rootfolder::String; type::String="BOA")
 
     for folder in tile_folders
         files = readdir(GlobMatch("*$(type).tif"), joinpath(rootfolder, folder));
+        if filename_contains != ""
+            files = [f for f in files if contains(f, filename_contains)]
+        end
         times = fname_to_datetime.(basename.(files));
         x,y = folder_to_index(folder)
-        series = RasterSeries(files, Ti(times); duplicate_first=true, name=Symbol(folder))
+        series = RasterSeries(files, Ti(times); duplicate_first=duplicate_first, name=Symbol(folder))
         tiles_offset[y,x] = series
         # push!(tiles, series)
     end
@@ -40,7 +43,7 @@ function ForceCube(rootfolder::String; type::String="BOA")
     dims = (xdims, ydims, Rasters.dims(series[1], Band))
     missingval = series[1].missingval
 
-    return ForceCube(tiles, dims, (), missingval, (xs, ys))
+    return ForceCube(tiles_offset, dims, (), missingval, (xs, ys))
 end
 
 function Base.show(io::IO, mime::MIME"text/plain", fc::ForceCube)
@@ -90,7 +93,7 @@ function mapseries(f, fc::ForceCube)
         else
             dims_ = (xdims, ydims)
         end
-        return ForceCube(tiles, dims_, sample_raster.refdims, fc.missingval, fc.xy)
+        return ForceCube(tiles_offset, dims_, sample_raster.refdims, fc.missingval, fc.xy)
     end
 end
 
