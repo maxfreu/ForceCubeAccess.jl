@@ -28,6 +28,9 @@ function ForceCube(rootfolder::String; type::String="BOA", filename_contains="",
         if filename_contains != ""
             files = [f for f in files if contains(f, filename_contains)]
         end
+        if length(files) == 0
+            continue
+        end
         times = fname_to_datetime.(basename.(files));
         x,y = folder_to_index(folder)
         series = RasterSeries(files, Ti(times); duplicate_first=duplicate_first, name=Symbol(folder))
