@@ -96,7 +96,7 @@ function mapseries(f, fc::ForceCube)
         else
             dims_ = (xdims, ydims)
         end
-        return ForceCube(tiles_offset, dims_, sample_raster.refdims, fc.missingval, fc.xy)
+        return ForceCube(tiles, dims_, sample_raster.refdims, fc.missingval, fc.xy)
     end
 end
 
