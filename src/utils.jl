@@ -5,7 +5,7 @@ Base.getindex(::NoData, I...) = NoData()
 Base.iterate(::NoData, state...) = nothing
 Base.ismissing(::NoData) = true
 Base.isempty(::NoData) = true
-DimensionalData.rebuild(::NoData, ::Vararg) = NoData()
+DD.rebuild(::NoData, ::Vararg) = NoData()
 Rasters.read(::NoData) = NoData()
 
 """
@@ -119,7 +119,7 @@ end
 
 Checks whether `r` contains any data which is different from its `missingval`.
 """
-contains_data(r::Raster) = any(r .!= r.missingval)
+contains_data(r::Raster) = any(r .!= missingval(r))
 
 """
     extract_nonmissing_rasters(s::RasterSeries)

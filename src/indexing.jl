@@ -1,12 +1,12 @@
 # temporal queries
-function Base.getindex(fc::ForceCube, I::DimensionalData.Selector)
+function Base.getindex(fc::ForceCube, I::DD.Selector)
     mapseries(fc) do series
         return series[I]
     end
 end
 
 # spatial queries
-function Base.getindex(fc::ForceCube, I::Vararg{DimensionalData.Dimension})
+function Base.getindex(fc::ForceCube, I::Vararg{DD.Dimension})
     mapseries(fc) do series
         @views rasters = [r[I...] for r in series]
         rebuild(series, rasters)
@@ -36,7 +36,6 @@ function Base.getindex(fc::ForceCube, I::ForceCube)
         series = src_series[At(times)]
         tiles[xy] = series
     end
-
     xdims, ydims = extract_dims(tiles)
     sample_raster = first(filter(!isempty, tiles))
     if ndims(sample_raster) == 3

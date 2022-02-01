@@ -67,7 +67,7 @@ end
 Base.parent(fc::ForceCube) = fc.tiles
 Base.size(fc::ForceCube) = size(parent(fc))
 Base.ndims(fc::ForceCube) = length(dims(fc))
-Base.iterate(fc::ForceCube, state...) = iterate(parent(fc), state...)
+Base.iterate(fc::ForceCube, state...) = iterate(filter(!isempty, parent(fc)), state...)
 Base.eltype(fc::ForceCube) = eltype(parent(fc))
 
 function mapseries(f, fc::ForceCube)
@@ -101,10 +101,28 @@ function mapseries(f, fc::ForceCube)
 end
 
 Rasters.dims(fc::ForceCube) = fc.dims
-Rasters.crs(fc::ForceCube) = crs(first(first(parent(fc))))
+Rasters.crs(fc::ForceCube) = crs(filter(!isempty, parent(fc))[1][1])
 Rasters.mappedcrs(fc::ForceCube) = mappedcrs(first(first(parent(fc))))
 
-Rasters.read(fc::ForceCube) = mapseries(read, fc)
+Rasters.read(fc::ForceCube) = mapseries(fc) do series
+    rasters = Raster[]
+    times = DateTime[]
+    for (i,r) in enumerate(series)
+        try
+            raster = read(r)
+            push!(rasters, raster)
+            push!(times, dims(series, Ti)[i])
+        catch err
+            if err isa GDAL.GDALError
+                println("[WARNING] Error loading $(Rasters.filename(r)), skipping.")
+                println(err)
+            else
+                rethrow(err)
+            end
+        end
+    end
+    return RasterSeries(rasters, Ti(times))
+end
 
 function Rasters.setmappedcrs(fc::ForceCube, crs)
     mapseries(fc) do series

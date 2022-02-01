@@ -6,6 +6,7 @@ version = "0.1.0"
 [deps]
 Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
 DimensionalData = "0703355e-b756-11e9-17c0-8b28908087d0"
+GDAL = "add2ef01-049f-52c4-9ee2-e494f65e021a"
 Glob = "c27321d9-0574-5035-807b-f59d2c89b15c"
 OffsetArrays = "6fe1bfb0-de20-5000-8ca7-80f57d26f881"
 Rasters = "a3a2b9e3-a471-40c9-b274-f788e487c689"
