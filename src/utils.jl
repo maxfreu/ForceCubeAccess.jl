@@ -142,3 +142,28 @@ function get_sensor(series, sensor="SEN2")
     sensor_imgs = (n -> contains(n, sensor)).(fnames)
     return series[sensor_imgs]
 end
+
+"""
+    tile_index(fc, x, y)
+
+Calculates the tile index, given the x and y coordinates in the projected coordinate reference system.
+Returns tile_x, tile_y
+"""
+function tile_index(fc, x, y)
+    o = origin(fc, :projected)
+    tile_size = def(fc).tile_size
+    tile_x = floor(Int, (x - o[1])/tile_size)
+    tile_y = floor(Int, (o[2] - y)/tile_size)
+    return tile_x, tile_y
+end
+
+"""
+    apply_bitmask(series, bitmask)
+
+Applies a bitmask (e.g. CLOUD_OPAQUE) to a `RasterSeries` or a `ForceCube``
+"""
+function apply_bitmask(iterable::Union{RasterSeries, ForceCube}, bitmask)
+    map(iterable) do object
+        (x -> (x .& bitmask) .> 0).(object)
+    end
+end

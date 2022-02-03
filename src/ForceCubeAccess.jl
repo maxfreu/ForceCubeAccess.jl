@@ -4,13 +4,18 @@ using Rasters
 using Glob: GlobMatch
 using Dates
 using OffsetArrays
+using ArchGDAL
 using GDAL
 using DimensionalData
 const DD = DimensionalData
 
-export ForceCube, mapseries, extract_nonmissing, get_data
+export ForceCube,
+       extract_nonmissing,
+       get_data,  # this is shit
+       apply_bitmask
+
 export VALID,
-       NODATA,
+       NODATA,  # really export?
        CLOUD_BUFFER,
        CLOUD_OPAQUE,
        CLOUD_CIRRUS,
@@ -33,6 +38,7 @@ const EMPTY_SERIES = RasterSeries(Raster[],Ti(DateTime[]))
 
 include("quality_bits.jl")
 include("utils.jl")
+include("definition.jl")
 include("datacube.jl")
 include("indexing.jl")
 

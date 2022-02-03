@@ -1,15 +1,29 @@
 # temporal queries
 function Base.getindex(fc::ForceCube, I::DD.Selector)
-    mapseries(fc) do series
+    map(fc) do series
         return series[I]
     end
 end
 
 # spatial queries
 function Base.getindex(fc::ForceCube, I::Vararg{DD.Dimension})
-    mapseries(fc) do series
+    map(fc) do series
         @views rasters = [r[I...] for r in series]
         rebuild(series, rasters)
+    end
+end
+
+# using At() or Near() to get a single time series
+function Base.getindex(fc::ForceCube, I::Vararg{Union{DD.Dimension{<:At}, DD.Dimension{<:Near}}})
+    x, y = DD.val.(DD.val.(DD.Dimensions.sortdims(I, (X,Y))))
+    
+    if !isnothing(mappedcrs(fc))
+        x, y = ArchGDAL.reproject((x,y), mappedcrs(fc), crs(fc); order=:trad)
+    end
+    tile_x, tile_y = tile_index(fc, x, y)
+    series = parent(fc)[tile_y, tile_x]
+    map(series) do raster
+        @view raster[I...]
     end
 end
 
@@ -43,7 +57,7 @@ function Base.getindex(fc::ForceCube, I::ForceCube)
     else
         dims_ = (xdims, ydims)
     end
-    fc = ForceCube(tiles, dims_, sample_raster.refdims, fc.missingval, fc.xy)
+    fc = ForceCube(tiles, dims_, sample_raster.refdims, fc.missingval, fc.mappedcrs, fc.xy, def(fc))
 
     # 2. spatial query
     xd = dims(I, X)

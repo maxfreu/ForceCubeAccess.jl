@@ -1,9 +1,11 @@
-struct ForceCube{T,D,R,Mi,X}
+struct ForceCube{T,D,R,Mi,C,X,Def}
     tiles::T
     dims::D
     refdims::R
     missingval::Mi
+    mappedcrs::C
     xy::X
+    def::Def
 end
 
 function ForceCube(rootfolder::String; type::String="BOA", filename_contains="", duplicate_first=true)
@@ -45,8 +47,11 @@ function ForceCube(rootfolder::String; type::String="BOA", filename_contains="",
 
     dims = (xdims, ydims, Rasters.dims(series[1], Band))
     missingval = series[1].missingval
+    mappedcrs_ = mappedcrs(series[1])
 
-    return ForceCube(tiles_offset, dims, (), missingval, (xs, ys))
+    def = ForceCubeDefinition(joinpath(rootfolder, "datacube-definition.prj"))
+
+    return ForceCube(tiles_offset, dims, (), missingval, mappedcrs_, (xs, ys), def)
 end
 
 function Base.show(io::IO, mime::MIME"text/plain", fc::ForceCube)
@@ -70,24 +75,26 @@ Base.ndims(fc::ForceCube) = length(dims(fc))
 Base.iterate(fc::ForceCube, state...) = iterate(filter(!isempty, parent(fc)), state...)
 Base.eltype(fc::ForceCube) = eltype(parent(fc))
 
-function mapseries(f, fc::ForceCube)
+function Base.map(f, fc::ForceCube)
     tiles = Matrix{eltype(fc)}(undef, size(fc)...)
     fill!(tiles, NoData())
+    tiles_offset = OffsetArray(tiles, minimum(fc.xy[2]):maximum(fc.xy[2]), minimum(fc.xy[1]):maximum(fc.xy[1]))
+
     for xy in eachindex(parent(fc))
         series = parent(fc)[xy]
-        if isa(series, NoData)
-            tiles[xy] = NoData()
+        if series isa NoData
+            tiles_offset[xy] = NoData()
             continue
         end
         res = f(series)
         if isempty(res) || (0 in size(first(res)))  # mind the comparison order
-            tiles[xy] = NoData()
+            tiles_offset[xy] = NoData()
         else
-            tiles[xy] = res
+            tiles_offset[xy] = res
         end
     end
     if all(isa.(tiles, NoData))
-        return ForceCube(tiles, (), (), fc.missingval, fc.xy)
+        return ForceCube(tiles_offset, (), (), fc.missingval, nothing, fc.xy, def(fc))
     else
         xdims, ydims = extract_dims(tiles)
         sample_raster = first(filter(!isempty, tiles))[1]
@@ -96,15 +103,15 @@ function mapseries(f, fc::ForceCube)
         else
             dims_ = (xdims, ydims)
         end
-        return ForceCube(tiles, dims_, sample_raster.refdims, fc.missingval, fc.xy)
+        return ForceCube(tiles_offset, dims_, sample_raster.refdims, fc.missingval, mappedcrs(sample_raster), fc.xy, def(fc))
     end
 end
 
 Rasters.dims(fc::ForceCube) = fc.dims
 Rasters.crs(fc::ForceCube) = crs(filter(!isempty, parent(fc))[1][1])
-Rasters.mappedcrs(fc::ForceCube) = mappedcrs(first(first(parent(fc))))
+Rasters.mappedcrs(fc::ForceCube) = fc.mappedcrs
 
-Rasters.read(fc::ForceCube) = mapseries(fc) do series
+Rasters.read(fc::ForceCube) = map(fc) do series
     rasters = Raster[]
     times = DateTime[]
     for (i,r) in enumerate(series)
@@ -125,15 +132,33 @@ Rasters.read(fc::ForceCube) = mapseries(fc) do series
 end
 
 function Rasters.setmappedcrs(fc::ForceCube, crs)
-    mapseries(fc) do series
+    map(fc) do series
         return setmappedcrs.(series, fill(crs, length(series)))
     end
 end
 
-extract_nonmissing(fc::ForceCube) = mapseries(extract_nonmissing_rasters, fc)
+extract_nonmissing(fc::ForceCube) = map(extract_nonmissing_rasters, fc)
 
 function get_data(fc::ForceCube)
     tiles = parent(fc)
     mask = .!isempty.(tiles)
     return tiles[mask]
+end
+
+def(fc::ForceCube) = fc.def
+
+"""
+Returns the origin of the force cube either in Lon/Lat or projected coords. The proj arg can either be :projected or :WGS
+"""
+function origin(fc::ForceCube, proj::Symbol=:projected)
+    if proj == :projected
+        x = def(fc).origin_x
+        y = def(fc).origin_y
+    elseif proj == :WGS
+        x = def(fc).origin_lon
+        y = def(fc).origin_lat
+    else
+        throw(ArgumentError("The proj argument can either be :projected or :WGS."))
+    end
+    return (x,y)
 end
