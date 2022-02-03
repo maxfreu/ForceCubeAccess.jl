@@ -147,6 +147,12 @@ end
 
 def(fc::ForceCube) = fc.def
 
+function apply_bitmask(fc::ForceCube, bitmask)
+    map(fc) do series
+        apply_bitmask(series, bitmask)
+    end
+end
+
 """
 Returns the origin of the force cube either in Lon/Lat or projected coords. The proj arg can either be :projected or :WGS
 """

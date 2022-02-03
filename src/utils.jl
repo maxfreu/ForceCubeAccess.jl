@@ -158,12 +158,18 @@ function tile_index(fc, x, y)
 end
 
 """
-    apply_bitmask(series, bitmask)
+    apply_bitmask(raster::Raster, bitmask)
+    apply_bitmask(series::RasterSeries, bitmask)
+    apply_bitmask(fc::ForceCube, bitmask)
 
-Applies a bitmask (e.g. CLOUD_OPAQUE) to a `RasterSeries` or a `ForceCube``
+Applies a bitmask (e.g. CLOUD_OPAQUE) to a `Raster`, `RasterSeries` or `ForceCube`.
 """
-function apply_bitmask(iterable::Union{RasterSeries, ForceCube}, bitmask)
-    map(iterable) do object
-        (x -> (x .& bitmask) .> 0).(object)
+function apply_bitmask(raster::Raster, bitmask)
+    (x -> (x .& bitmask) .> 0).(raster)
+end
+
+function apply_bitmask(series::RasterSeries, bitmask)
+    map(series) do raster
+        apply_bitmask(raster, bitmask)
     end
 end
