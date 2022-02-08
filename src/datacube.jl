@@ -96,8 +96,8 @@ function Base.map(f, fc::ForceCube)
     if all(isa.(tiles, NoData))
         return ForceCube(tiles_offset, (), (), fc.missingval, nothing, fc.xy, def(fc))
     else
-        xdims, ydims = extract_dims(tiles)
-        sample_raster = first(filter(!isempty, tiles))[1]
+        xdims, ydims = extract_dims(tiles_offset)
+        sample_raster = first(filter(!isempty, tiles_offset))[1]
         if ndims(sample_raster) == 3
             dims_ = (xdims, ydims, dims(sample_raster, Band))
         else
