@@ -163,9 +163,10 @@ end
     apply_bitmask(fc::ForceCube, bitmask)
 
 Applies a bitmask (e.g. CLOUD_OPAQUE) to a `Raster`, `RasterSeries` or `ForceCube`.
+Returns a boolean array being true where the bitmask was matched.
 """
 function apply_bitmask(raster::Raster, bitmask)
-    (x -> (x .& bitmask) .> 0).(raster)
+    (raster .& bitmask) .> 0
 end
 
 function apply_bitmask(series::RasterSeries, bitmask)
