@@ -35,7 +35,7 @@ function ForceCube(rootfolder::String; type::String="BOA", filename_contains="",
         end
         times = fname_to_datetime.(basename.(files));
         x,y = folder_to_index(folder)
-        series = RasterSeries(files, Ti(times); duplicate_first=duplicate_first, name=Symbol(folder))
+        series = RasterSeries(files, Ti(times); duplicate_first=duplicate_first, name=Symbol(folder), lazy=true)
         tiles_offset[y,x] = series
         # push!(tiles, series)
     end
@@ -128,7 +128,7 @@ Rasters.read(fc::ForceCube) = map(fc) do series
             end
         end
     end
-    return RasterSeries(rasters, Ti(times))
+    return RasterSeries(rasters, Ti(times); lazy=true)
 end
 
 function Rasters.setmappedcrs(fc::ForceCube, crs)
