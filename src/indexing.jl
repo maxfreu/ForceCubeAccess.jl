@@ -26,9 +26,9 @@ end
 # using At() or Near() to get a single time series
 function Base.getindex(fc::ForceCube, I::Vararg{<:Union{DD.Dimension{<:At}, DD.Dimension{<:Near}}})
     x, y = DD.val.(DD.val.(DD.sortdims(I, (X,Y))))
-    if !isnothing(mappedcrs(fc))
-        x, y = ArchGDAL.reproject((x,y), mappedcrs(fc), crs(fc); order=:trad)
-    end
+    # if !isnothing(mappedcrs(fc))
+    #     x, y = ArchGDAL.reproject((x,y), mappedcrs(fc), crs(fc); order=:trad)
+    # end
     tile_x, tile_y = tile_index(fc, x, y)
     series = parent(fc)[tile_y, tile_x]
     if series isa NoData
