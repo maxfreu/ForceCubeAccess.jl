@@ -77,6 +77,12 @@ function Base.map(f, ts::TimeSlice)
 end
 
 
+
+"""
+    solidify(ts::TimeSlice)
+
+Reads all data in a "lazy" TimeSlice object from disk into RAM.
+"""
 function solidify(ts::TimeSlice)
     data = read.(parent(ts))
     out = Raster(zeros(eltype(data[1]), size(ts)...);

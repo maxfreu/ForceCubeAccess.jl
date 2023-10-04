@@ -176,7 +176,7 @@ Rasters.read(fc::ForceCube) = map(fc) do series
             end
         end
     end
-    return RasterSeries(rasters, Ti(times); lazy=true)
+    return RasterSeries(rasters, Ti(times))
 end
 
 
@@ -250,6 +250,11 @@ function origin(fc::ForceCube, proj::Symbol=:projected)
 end
 
 
+"""
+    alltimes(fc::ForceCube) => Vector{DateTime}
+
+Extracts all observation times present in the datacube.
+"""
 function alltimes(fc::ForceCube)
     data = get_data(fc)
     timedims = dims.(data, Ti)

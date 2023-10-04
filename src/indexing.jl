@@ -1,4 +1,4 @@
-const SpatialSpectralDim = Union{DD.Dimensions.X, DD.Dimensions.Y, Rasters.Band}
+const SpatialSpectralDim = Union{DD.Dimension, Rasters.Band}
 
 # indexing into the offset array with tile indices
 function Base.getindex(fc::ForceCube, I::Vararg{Int})
@@ -24,11 +24,11 @@ end
 
 
 # using At() or Near() to get a single time series
-function Base.getindex(fc::ForceCube, I::Vararg{Union{DD.Dimension{<:At}, DD.Dimension{<:Near}}})
-    x, y = DD.val.(DD.val.(DD.Dimensions.sortdims(I, (X,Y))))
-    # if !isnothing(mappedcrs(fc))
-    #     x, y = ArchGDAL.reproject((x,y), mappedcrs(fc), crs(fc); order=:trad)
-    # end
+function Base.getindex(fc::ForceCube, I::Vararg{<:Union{DD.Dimension{<:At}, DD.Dimension{<:Near}}})
+    x, y = DD.val.(DD.val.(DD.sortdims(I, (X,Y))))
+    if !isnothing(mappedcrs(fc))
+        x, y = ArchGDAL.reproject((x,y), mappedcrs(fc), crs(fc); order=:trad)
+    end
     tile_x, tile_y = tile_index(fc, x, y)
     series = parent(fc)[tile_y, tile_x]
     if series isa NoData
@@ -50,6 +50,16 @@ end
 
 function Base.getindex(ts::TimeSlice, I::Vararg{<:SpatialSpectralDim})
     map(ts) do raster
-        @views raster[I...] 
+        @views raster[I...]
     end
+end
+
+
+function Base.getindex(fc::ForceCube, I::ForceCube)
+    (xmin, xmax), (ymin, ymax) = extrema.(dims(I, (X,Y)))
+    selection = fc[X(xmin..xmax), Y(ymin..ymax)]
+    fctimes = alltimes(selection)
+    Itimes = alltimes(I)
+    fcseries = seriesrepresentation(selection; times=intersect(fctimes, Itimes))
+    return fcseries
 end
