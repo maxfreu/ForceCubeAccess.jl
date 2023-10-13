@@ -265,8 +265,8 @@ function alltimes(fc::ForceCube)
 end
 
 
-function extract_timeslice(fc::ForceCube, time::Dates.AbstractTime)
-    # first, filter out all series that have time in them
+function extract_timeslice(fc::ForceCube, time::Dates.AbstractTime; crop=true)
+    # first, filter out all RasterSeries that have 'time' in them
     # to avoid later indexing errors
     containstime = map(fc) do series
         if time in dims(series, Ti)
@@ -279,7 +279,12 @@ function extract_timeslice(fc::ForceCube, time::Dates.AbstractTime)
     matrixofrasters = map(parent(containstime)) do series
         return series[At(time)]
     end
-    # content = matrixofrasters
-    content = croptocontent(matrixofrasters)
+    
+    if crop
+        content = croptocontent(matrixofrasters)
+    else
+        content = matrixofrasters
+    end
+
     return content
 end

@@ -12,16 +12,16 @@ const EMPTY_TIMESLICE = TimeSlice(zeros(0,0), (), (), Date(0), ())
 
 function TimeSlice(tiles, date, def)
     # crop matrix of Rasters and NoData to its content
-    tiles = croptocontent(tiles)
+    # tiles = croptocontent(tiles)
     # extract xdim, ydim for the entire cropped matrix
     dims_ = extract_dims(tiles)
     # get missingval from the first usable Raster
-    missingval_ = missingval(tiles[findfirst(!isempty, tiles)])
-    # retrieve the heights of each row of the tiles
+    sampleraster = tiles[findfirst(!isempty, tiles)]
+    missingval_ = missingval(sampleraster)
+    banddim = dims(sampleraster, Band)
+    
     xdims, ydims = get_blocked_dims(tiles, def)
     out = similar(tiles)
-    sampleraster = tiles[findfirst(!isempty, tiles)]
-    banddim = dims(sampleraster, Band)
     for (i,x) in enumerate(axes(tiles, 2))
         for (j,y) in enumerate(axes(tiles, 1))
             xdim = xdims[i]
@@ -46,8 +46,18 @@ end
 
 
 Base.parent(ts::TimeSlice) = ts.tiles
-Base.size(ts::TimeSlice) = length.(ts.dims)
 Rasters.dims(ts::TimeSlice) = ts.dims
+Base.size(ts::TimeSlice) = size(parent(ts))
+
+# function Base.size(ts::TimeSlice)
+#     xsize = sum(size.(no_offset_view(parent(ts))[1, :], X))
+#     ysize = sum(size.(no_offset_view(parent(ts))[:, 1], Y))
+#     if length(dims(ts)) == 3  # brittle!
+#         bandsize = size(first(parent(ts)), Band)
+#         return xsize, ysize, bandsize
+#     end
+#     return xsize, ysize
+# end
 
 
 function Base.show(io::IO, mime::MIME"text/plain", ts::TimeSlice)

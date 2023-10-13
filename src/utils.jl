@@ -65,7 +65,9 @@ end
 Collates two dimensions. The dimensions must have the same resolution, but they can be disjunct.
 """
 function joindims_bridge_gap(lower::T, upper::T)::T where T
-    if length(lower) == 0
+    if lower === upper
+        return lower
+    elseif length(lower) == 0
         return upper
     elseif length(upper) == 0
         return lower
@@ -77,7 +79,10 @@ function joindims_bridge_gap(lower::T, upper::T)::T where T
     lres == ures || error("Dimensions must have the same resolution, but they have $lres and $ures.")
     lrange = lproj.data
     urange = uproj.data
-    newrange = LinRange(lrange.start, urange.stop, floor(Int, (urange.stop - lrange.start) / lres) + 1)
+    n = (urange.stop - lrange.start) / lres
+    isapprox(n % 1, 0; atol=1e-9) || error("Spatial distance is not evenly divisible by the resolution.")
+    nsteps = ceil(Int, n) + 1
+    newrange = LinRange(lrange.start, urange.stop, nsteps)
     newproj = rebuild(lproj; data=newrange)
     return rebuild(lower; val=newproj)
 end
@@ -140,9 +145,9 @@ function extract_dims(tiles::AbstractMatrix)
     yperm = sortperm([d.val.data.start for d in ydims])
     xdims = xdims[xperm]
     ydims = reverse(ydims[yperm])  # adjust for reversed y indices, this is brittle
-    xdims = joindims_bridge_gap(first(xdims), last(xdims))
-    ydims = joindims_bridge_gap(first(ydims), last(ydims))
-    return xdims, ydims
+    xdims_joined = joindims_bridge_gap(first(xdims), last(xdims))
+    ydims_joined = joindims_bridge_gap(first(ydims), last(ydims))
+    return xdims_joined, ydims_joined
 end
 
 
@@ -252,6 +257,12 @@ function read_files_into_series(files::Vector{String}, T, duplicate_first=true)
 end
 
 
+"""
+    bridge_dims(dimvec, dim, desired_length, def)
+
+Fill the range between to disjunct dims with new dims that are defined by 
+the ForceCubeDefinition def. `dim` can be X or Y.
+"""
 function bridge_dims(dimvec, dim, desired_length, def)
     if desired_length <= 2
         return dimvec
