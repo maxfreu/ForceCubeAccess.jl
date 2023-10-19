@@ -77,12 +77,34 @@ function ForceCube(rootfolder::String; type::String="BOA", filename_contains="",
         dims = (xdims, ydims, banddim)
     end
 
-    missingval = series[1].missingval
+    missingval_ = missingval(series[1])
     mappedcrs_ = mappedcrs(series[1])
 
     def = ForceCubeDefinition(joinpath(rootfolder, "datacube-definition.prj"))
 
-    return ForceCube(tiles_offset, dims, (), missingval, mappedcrs_, def)
+    return ForceCube(tiles_offset, dims, (), missingval_, mappedcrs_, def)
+end
+
+
+function ForceCube(tiles, def)
+    idx = findfirst(!isempty, tiles)
+    series = tiles[idx]
+    r = first(series)
+
+    xdims, ydims = extract_dims(tiles)
+    banddim = Rasters.dims(r, Band)
+    
+    # qai files have no band dimension
+    if isnothing(banddim)
+        dims = (xdims, ydims)
+    else
+        dims = (xdims, ydims, banddim)
+    end
+    
+    missingval_ = missingval(r)
+    mappedcrs_  = mappedcrs(r)
+
+    return ForceCube(tiles, dims, (), missingval_, mappedcrs_, def)
 end
 
 
@@ -265,26 +287,4 @@ function alltimes(fc::ForceCube)
 end
 
 
-function extract_timeslice(fc::ForceCube, time::Dates.AbstractTime; crop=true)
-    # first, filter out all RasterSeries that have 'time' in them
-    # to avoid later indexing errors
-    containstime = map(fc) do series
-        if time in dims(series, Ti)
-            return series
-        else
-            return NoData()
-        end
-    end
 
-    matrixofrasters = map(parent(containstime)) do series
-        return series[At(time)]
-    end
-    
-    if crop
-        content = croptocontent(matrixofrasters)
-    else
-        content = matrixofrasters
-    end
-
-    return content
-end

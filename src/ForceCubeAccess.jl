@@ -44,8 +44,8 @@ export VALID,
 const EMPTY_SERIES = RasterSeries(Raster[],Ti(DateTime[]))
 
 include("quality_bits.jl")
-include("utils.jl")
 include("definition.jl")
+include("utils.jl")
 include("datacube.jl")
 include("timeslice.jl")
 include("seriesrepresentation.jl")

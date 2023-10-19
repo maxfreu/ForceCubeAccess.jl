@@ -11,6 +11,10 @@ const EMPTY_TIMESLICE = TimeSlice(zeros(0,0), (), (), Date(0), ())
 
 
 function TimeSlice(tiles, date, def)
+    
+    # TODO: write another constructor with a dims argument that nails
+    # down the dims in advance
+        
     # crop matrix of Rasters and NoData to its content
     # tiles = croptocontent(tiles)
     # extract xdim, ydim for the entire cropped matrix
@@ -45,19 +49,51 @@ function TimeSlice(tiles, date, def)
 end
 
 
+function TimeSlice(tiles::OffsetMatrix, xydims::Tuple, date::Dates.AbstractTime, def::ForceCubeDefinition)
+    sampleraster = tiles[findfirst(!isempty, tiles)]
+    missingval_ = missingval(sampleraster)
+    banddim = dims(sampleraster, Band)
+    xdims = xydims[1]
+    ydims = xydims[2]
+    dims_ = (joindims_bridge_gap(first(xdims), last(xdims)),
+             joindims_bridge_gap(first(ydims), last(ydims)))
+    dims_ = isnothing(banddim) ? dims_ : (dims_..., banddim)
+    out = similar(tiles)
+    for (i,x) in enumerate(axes(tiles, 2))
+        for (j,y) in enumerate(axes(tiles, 1))
+            xdim = xdims[i]
+            ydim = ydims[j]
+            if tiles[y,x] isa NoData
+                if !isnothing(banddim)
+                    sz = length.((xdim, ydim, banddim))
+                    val = Raster(Fill(missingval(sampleraster), sz...), dims=(xdim, ydim, banddim))
+                else
+                    sz = length.((xdim, ydim))
+                    val = Raster(Fill(missingval(sampleraster), sz...), dims=(xdim, ydim))
+                end
+            else
+                val = tiles[y,x]
+            end
+            out[y,x] = val
+        end
+    end
+    return TimeSlice(out, dims_, missingval_, date, def)
+end
+
+
 Base.parent(ts::TimeSlice) = ts.tiles
 Rasters.dims(ts::TimeSlice) = ts.dims
 Base.size(ts::TimeSlice) = size(parent(ts))
 
-# function Base.size(ts::TimeSlice)
-#     xsize = sum(size.(no_offset_view(parent(ts))[1, :], X))
-#     ysize = sum(size.(no_offset_view(parent(ts))[:, 1], Y))
-#     if length(dims(ts)) == 3  # brittle!
-#         bandsize = size(first(parent(ts)), Band)
-#         return xsize, ysize, bandsize
-#     end
-#     return xsize, ysize
-# end
+function pixelsize(ts::TimeSlice)
+    xsize = sum(size.(no_offset_view(parent(ts))[1, :], X))
+    ysize = sum(size.(no_offset_view(parent(ts))[:, 1], Y))
+    if length(dims(ts)) == 3  # brittle!
+        bandsize = length(dims(ts)[3])
+        return xsize, ysize, bandsize
+    end
+    return xsize, ysize
+end
 
 
 function Base.show(io::IO, mime::MIME"text/plain", ts::TimeSlice)
@@ -72,7 +108,7 @@ function Base.show(io::IO, mime::MIME"text/plain", ts::TimeSlice)
     println(io)
     println(io, "Date: $(Date(ts.date))")
     println(io, "Size in tiles (rows, cols): $(size(parent(ts)))")
-    println(io, "Size in pixels (x,y): $(size(ts))")
+    println(io, "Size in pixels (x,y): $(pixelsize(ts))")
     println(io, "Tilerange y: $(tilerange[1])")
     println(io, "Tilerange x: $(tilerange[2])")
 end
@@ -95,7 +131,7 @@ Reads all data in a "lazy" TimeSlice object from disk into RAM.
 """
 function solidify(ts::TimeSlice)
     data = read.(parent(ts))
-    out = Raster(zeros(eltype(data[1]), size(ts)...);
+    out = Raster(Array{eltype(data[1])}(undef, pixelsize(ts)...);
                        dims=dims(ts),
                        refdims=refdims(data[1]),
                        missingval=missingval(data[1]))

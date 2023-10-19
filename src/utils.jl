@@ -17,7 +17,7 @@ Rasters.dims(::NoData, x) = Tuple{}()
 
 Converts a string starting with 'yymmdd' into a DateTime object. 
 """
-fname_to_datetime(fname) = DateTime(fname[1:8], "yyyymmdd")
+fname_to_date(fname) = Date(fname[1:8], "yyyymmdd")
 
 
 """
@@ -251,7 +251,7 @@ function read_files_into_series(files::Vector{String}, T, duplicate_first=true)
         # return RasterSeries(T[], Ti(DateTime[]))
     else
         folder = split(files[1], '/')[end-1]
-        times = fname_to_datetime.(basename.(files))
+        times = fname_to_date.(basename.(files))
         return RasterSeries(files, Ti(times); duplicate_first=duplicate_first, name=Symbol(folder), lazy=true)
     end
 end
@@ -285,7 +285,7 @@ function bridge_dims(dimvec, dim, desired_length, def)
 end
 
 
-function get_blocked_dims(tiles, def)
+function get_blocked_dims(tiles::AbstractArray{<:Union{NoData, Raster}}, def::ForceCubeDefinition)
     # ok this is now hardcore verbose
     firstrow = @view no_offset_view(tiles)[1, :]
     lastrow  = @view no_offset_view(tiles)[end, :]
@@ -302,7 +302,7 @@ end
 
 
 function sizes(tiles)
-    xsizes = @views size.(no_offset_view(tiles)[1,:], X)
-    ysizes = @views size.(no_offset_view(tiles)[:,1], Y)
+    xsizes = size.(view(no_offset_view(tiles), 1, :), X)
+    ysizes = size.(view(no_offset_view(tiles), :, 1), Y)
     return xsizes, ysizes
 end
