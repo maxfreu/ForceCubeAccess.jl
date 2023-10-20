@@ -21,7 +21,8 @@ function TimeSlice(tiles, date, def)
     dims_ = extract_dims(tiles)
     # get missingval from the first usable Raster
     sampleraster = tiles[findfirst(!isempty, tiles)]
-    missingval_ = missingval(sampleraster)
+    T = eltype(sampleraster)
+    missingval_ = convert(T, missingval(sampleraster))
     banddim = dims(sampleraster, Band)
     
     xdims, ydims = get_blocked_dims(tiles, def)
@@ -33,10 +34,10 @@ function TimeSlice(tiles, date, def)
             if tiles[y,x] isa NoData
                 if !isnothing(banddim)
                     sz = length.((xdim, ydim, banddim))
-                    val = Raster(Fill(missingval(sampleraster), sz...), dims=(xdim, ydim, banddim))
+                    val = Raster(Fill(missingval_, sz...), dims=(xdim, ydim, banddim))
                 else
                     sz = length.((xdim, ydim))
-                    val = Raster(Fill(missingval(sampleraster), sz...), dims=(xdim, ydim))
+                    val = Raster(Fill(missingval_, sz...), dims=(xdim, ydim))
                 end
             else
                 val = tiles[y,x]
@@ -51,7 +52,8 @@ end
 
 function TimeSlice(tiles::OffsetMatrix, xydims::Tuple, date::Dates.AbstractTime, def::ForceCubeDefinition)
     sampleraster = tiles[findfirst(!isempty, tiles)]
-    missingval_ = missingval(sampleraster)
+    T = eltype(sampleraster)
+    missingval_ = convert(T, missingval(sampleraster))
     banddim = dims(sampleraster, Band)
     xdims = xydims[1]
     ydims = xydims[2]
@@ -66,10 +68,10 @@ function TimeSlice(tiles::OffsetMatrix, xydims::Tuple, date::Dates.AbstractTime,
             if tiles[y,x] isa NoData
                 if !isnothing(banddim)
                     sz = length.((xdim, ydim, banddim))
-                    val = Raster(Fill(missingval(sampleraster), sz...), dims=(xdim, ydim, banddim))
+                    val = Raster(Fill(missingval_, sz...), dims=(xdim, ydim, banddim))
                 else
                     sz = length.((xdim, ydim))
-                    val = Raster(Fill(missingval(sampleraster), sz...), dims=(xdim, ydim))
+                    val = Raster(Fill(missingval_, sz...), dims=(xdim, ydim))
                 end
             else
                 val = tiles[y,x]

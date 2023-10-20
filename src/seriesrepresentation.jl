@@ -34,6 +34,10 @@ function seriesrepresentation(fc::ForceCube; times=alltimes(fc))
     xydims = get_blocked_dims(rasters, def(fc))
     
     slices = [TimeSlice(extract_timeslice(tiles, t), xydims, t, fc.def) for t in times]
-
-    return RasterSeries(slices, (Ti(times),), Tuple{}())
+    if times isa DD.TimeDim
+        timedim = times
+    else
+        timedim = Ti(DD.Sampled(sort!(collect(times)); order=DD.ForwardOrdered(), span=DD.Irregular(), sampling=DD.Points()))
+    end
+    return RasterSeries(slices, (timedim,), Tuple{}())
 end

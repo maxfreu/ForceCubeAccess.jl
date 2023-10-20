@@ -282,7 +282,7 @@ function alltimes(fc::ForceCube)
     timedims = dims.(data, Ti)
     times = union(Rasters.val.(timedims)...)
     sort!(times)
-    timedim = Ti(DD.rebuild(first(timedims).val, data=times))
+    timedim = Ti(DD.Sampled(times; order=DD.ForwardOrdered(), span=DD.Irregular(), sampling=DD.Points()))
     return timedim
 end
 
