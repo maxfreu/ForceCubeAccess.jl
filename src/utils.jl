@@ -285,7 +285,7 @@ function bridge_dims(dimvec, dim, desired_length, def)
 end
 
 
-function get_blocked_dims(tiles::AbstractArray{<:Union{NoData, Raster}}, def::ForceCubeDefinition)
+function get_blocked_dims(tiles::AbstractArray, def::ForceCubeDefinition)
     # ok this is now hardcore verbose
     firstrow = @view no_offset_view(tiles)[1, :]
     lastrow  = @view no_offset_view(tiles)[end, :]
