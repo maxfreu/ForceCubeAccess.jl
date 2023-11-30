@@ -23,6 +23,6 @@ GDAL = "1.6"
 Glob = "1.3"
 IntervalSets = "0.7"
 OffsetArrays = "1.12"
-Progressbars = "1.5"
+ProgressBars = "1.5"
 # should be compatible to Rasters 0.9 as well, but can't test right now
 Rasters = "0.8"
