@@ -4,15 +4,22 @@ using Rasters
 using Glob: GlobMatch
 using Dates
 using OffsetArrays
+using OffsetArrays: no_offset_view
 using ArchGDAL
 using GDAL
+using ProgressBars
+using FillArrays
+using IntervalSets
 using DimensionalData
 const DD = DimensionalData
 
 export ForceCube,
+       TimeSlice,
        extract_nonmissing,
        get_data,  # this is shit
-       apply_bitmask
+       apply_bitmask,
+       seriesrepresentation,
+       solidify
 
 export VALID,
        NODATA,  # really export?
@@ -37,9 +44,12 @@ export VALID,
 const EMPTY_SERIES = RasterSeries(Raster[],Ti(DateTime[]))
 
 include("quality_bits.jl")
-include("utils.jl")
 include("definition.jl")
+include("utils.jl")
 include("datacube.jl")
+include("timeslice.jl")
+include("seriesrepresentation.jl")
 include("indexing.jl")
+include("crop.jl")
 
 end
