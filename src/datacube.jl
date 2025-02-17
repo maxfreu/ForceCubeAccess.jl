@@ -275,7 +275,7 @@ end
 """
     alltimes(fc::ForceCube) => Vector{DateTime}
 
-Extracts all observation times present in the datacube.
+Extracts all observation dates present in the datacube.
 """
 function alltimes(fc::ForceCube)
     data = get_data(fc)
@@ -283,7 +283,7 @@ function alltimes(fc::ForceCube)
     times = union(Rasters.val.(timedims)...)
     sort!(times)
     timedim = Ti(DD.Sampled(times; order=DD.ForwardOrdered(), span=DD.Irregular(), sampling=DD.Points()))
-    return timedim
+    return Date.(timedim)
 end
 
 
