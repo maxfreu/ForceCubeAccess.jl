@@ -1,4 +1,4 @@
-struct TimeSlice{T<:AbstractMatrix, D, M, Dt<:Dates.AbstractTime, Def}
+struct TimeSlice{T<:AbstractMatrix, D, M, Dt<:Dates.AbstractTime, Def} <: AbstractRaster{eltype(eltype(T)),2,D,T}
     tiles::T
     dims::D
     missingval::M

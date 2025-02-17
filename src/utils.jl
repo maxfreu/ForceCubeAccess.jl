@@ -79,10 +79,10 @@ function joindims_bridge_gap(lower::T, upper::T)::T where T
     lres == ures || error("Dimensions must have the same resolution, but they have $lres and $ures.")
     lrange = lproj.data
     urange = uproj.data
-    n = (urange.stop - lrange.start) / lres
+    n = (last(urange) - first(lrange)) / lres
     isapprox(n % 1, 0; atol=1e-9) || isapprox(n % 1, 1; atol=1e-9) || error("Spatial distance is not evenly divisible by the resolution.")
     nsteps = ceil(Int, n) + 1
-    newrange = LinRange(lrange.start, urange.stop, nsteps)
+    newrange = range(first(lrange), last(urange); length=nsteps)
     newproj = rebuild(lproj; data=newrange)
     return rebuild(lower; val=newproj)
 end
@@ -141,8 +141,8 @@ function extract_dims(tiles::AbstractMatrix)
     xdims = uniquedims([extract_dims(r, X) for r in tiles if !isempty(r)])
     ydims = uniquedims([extract_dims(r, Y) for r in tiles if !isempty(r)])
     # sort them by their starting point
-    xperm = sortperm([d.val.data.start for d in xdims])
-    yperm = sortperm([d.val.data.start for d in ydims])
+    xperm = sortperm([first(d.val.data) for d in xdims])
+    yperm = sortperm([first(d.val.data) for d in ydims])
     xdims = xdims[xperm]
     ydims = reverse(ydims[yperm])  # adjust for reversed y indices, this is brittle
     xdims_joined = joindims_bridge_gap(first(xdims), last(xdims))
@@ -156,7 +156,7 @@ end
 
 Checks whether `r` contains any data which is different from its `missingval`.
 """
-contains_data(r::Raster) = any(r .!= missingval(r))
+contains_data(r::Raster) = any(r .!== missingval(r))
 
 
 """

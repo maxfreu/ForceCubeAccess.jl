@@ -7,8 +7,11 @@ using Dates
 using OffsetArrays
 import DimensionalData as DD
 
-const boa = deserialize("/home/mfreude/projects/force_cutouts/boa_2023-10-03.jls191")
-const qai = deserialize("/home/mfreude/projects/force_cutouts/qai_2023-10-03.jls191")
+# const boa = deserialize("/home/mfreude/projects/force_cutouts/boa_2023-10-03.jls191")
+# const qai = deserialize("/home/mfreude/projects/force_cutouts/qai_2023-10-03.jls191")
+
+const boa = ForceCube("/data_hdd/force_codede/FORCE/C1/L2/ard/"; type="BOA")
+const qai = ForceCube("/data_hdd/force_codede/FORCE/C1/L2/ard/"; type="QAI")
 
 function checkdims(tile1, tile2, dim)
     dim1 = dims(tile1, dim)
@@ -162,6 +165,6 @@ end
         qai_masked = apply_bitmask(selection, cloudy)  # garbage is 1, usable data is 0, missingval should be 1
         @test length(qai_masked[1]) == 39
         qai_masked = extract_nonmissing(qai_masked)
-        @test length(qai_masked[1]) == 35
+        @test length(qai_masked[1]) == 33
     end
 end
