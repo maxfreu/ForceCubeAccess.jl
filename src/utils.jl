@@ -81,7 +81,7 @@ function joindims_bridge_gap(lower::T, upper::T)::T where T
     urange = uproj.data
     n = (last(urange) - first(lrange)) / lres
     isapprox(n % 1, 0; atol=1e-9) || isapprox(n % 1, 1; atol=1e-9) || error("Spatial distance is not evenly divisible by the resolution.")
-    nsteps = ceil(Int, n) + 1
+    nsteps = round(Int, n) + 1
     newrange = range(first(lrange), last(urange); length=nsteps)
     newproj = rebuild(lproj; data=newrange)
     return rebuild(lower; val=newproj)

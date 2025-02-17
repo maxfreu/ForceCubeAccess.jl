@@ -34,10 +34,10 @@ function TimeSlice(tiles, date, def)
             if tiles[y,x] isa NoData
                 if !isnothing(banddim)
                     sz = length.((xdim, ydim, banddim))
-                    val = Raster(Fill(missingval_, sz...), dims=(xdim, ydim, banddim))
+                    val = Raster(Fill(missingval_, sz...), dims=(xdim, ydim, banddim), missingval=missingval_)
                 else
                     sz = length.((xdim, ydim))
-                    val = Raster(Fill(missingval_, sz...), dims=(xdim, ydim))
+                    val = Raster(Fill(missingval_, sz...), dims=(xdim, ydim), missingval=missingval_)
                 end
             else
                 val = tiles[y,x]
@@ -68,10 +68,10 @@ function TimeSlice(tiles::OffsetMatrix, xydims::Tuple, date::Dates.AbstractTime,
             if tiles[y,x] isa NoData
                 if !isnothing(banddim)
                     sz = length.((xdim, ydim, banddim))
-                    val = Raster(Fill(missingval_, sz...), dims=(xdim, ydim, banddim))
+                    val = Raster(Fill(missingval_, sz...), dims=(xdim, ydim, banddim), missingval=missingval_)
                 else
                     sz = length.((xdim, ydim))
-                    val = Raster(Fill(missingval_, sz...), dims=(xdim, ydim))
+                    val = Raster(Fill(missingval_, sz...), dims=(xdim, ydim), missingval=missingval_)
                 end
             else
                 val = tiles[y,x]
